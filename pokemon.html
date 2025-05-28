@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokemon Explorer</title>
+  <!-- Bootstrap CSS per uno stile moderno e responsive -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Stili personalizzati -->
+  <style>
+    body {
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+    .pokemon-card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+      margin-bottom: 20px;
+    }
+    .pokemon-card:hover {
+      transform: scale(1.03);
+    }
+    .card-title {
+      text-transform: capitalize;
+    }
+    .btn-group .btn.active {
+      background-color: #0d6efd;
+      color: white;
+    }
+    /* Permette lo scroll orizzontale per il menu se ci sono troppi pulsanti */
+    .filter-container {
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header centrato con Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+    <div class="container justify-content-center">
+      <a class="navbar-brand" href="#">Pokemon Explorer</a>
+    </div>
+  </nav>
+
+  <!-- Sezione per i pulsanti di filtro ben centrata -->
+  <div class="container mb-3">
+    <div class="d-flex justify-content-center">
+      <div class="btn-group filter-container flex-wrap" role="group" aria-label="Filtri Pokemon">
+        <button type="button" class="btn btn-outline-primary active" onclick="filterPokemons('all', event)">Tutti</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('normal', event)">Normale</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('fire', event)">Fuoco</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('water', event)">Acqua</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('electric', event)">Elettrico</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('grass', event)">Erba</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('ice', event)">Ghiaccio</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('fighting', event)">Lotta</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('poison', event)">Veleno</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('ground', event)">Terra</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('flying', event)">Volante</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('psychic', event)">Psico</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('bug', event)">Coleottero</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('rock', event)">Roccia</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('ghost', event)">Spettro</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('dragon', event)">Drago</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('dark', event)">Buio</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('steel', event)">Acciaio</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterPokemons('fairy', event)">Fata</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container per le card dei Pokémon e la paginazione -->
+  <div class="container">
+    <div class="row" id="pokemonContainer">
+      <!-- Le card verranno inserite dinamicamente -->
+    </div>
+    <nav>
+      <ul id="pagination" class="pagination justify-content-center"></ul>
+    </nav>
+  </div>
+
+  <!-- Footer centrato con il testo "Bocaletto Luca" -->
+  <footer class="bg-dark text-light text-center p-3 mt-4">
+    <div class="container">
+      Bocaletto Luca
+    </div>
+  </footer>
+
+  <!-- Bootstrap Bundle JS (include Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Script per la logica dell'applicazione -->
+  <script>
+    // Cache per le liste dei Pokémon in base ai filtri
+    let cachedLists = {
+      all: [],
+      normal: null,
+      fire: null,
+      water: null,
+      electric: null,
+      grass: null,
+      ice: null,
+      fighting: null,
+      poison: null,
+      ground: null,
+      flying: null,
+      psychic: null,
+      bug: null,
+      rock: null,
+      ghost: null,
+      dragon: null,
+      dark: null,
+      steel: null,
+      fairy: null
+    };
+    let currentDisplayList = [];
+    let currentPage = 1;
+    const pageSize = 50;
+
+    // Estrae l'ID dal link del Pokémon per generare l'URL dell'immagine
+    function extractIdFromUrl(url) {
+      const parts = url.split('/').filter(Boolean);
+      return parts[parts.length - 1];
+    }
+
+    // Crea una card per ciascun Pokémon
+    function createPokemonCard(pokemon) {
+      const col = document.createElement('div');
+      col.className = 'col-md-3 col-sm-6 mb-3';
+      
+      const card = document.createElement('div');
+      card.className = 'card pokemon-card';
+      card.style.cursor = 'pointer';
+      
+      // Costruisce l'URL dell'immagine usando l'ID estratto
+      const id = extractIdFromUrl(pokemon.url);
+      const img = document.createElement('img');
+      img.className = 'card-img-top';
+      img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+      img.alt = pokemon.name;
+      card.appendChild(img);
+      
+      // Corpo della card con il nome del Pokémon
+      const cardBody = document.createElement('div');
+      cardBody.className = 'card-body text-center';
+      const title = document.createElement('h5');
+      title.className = 'card-title';
+      title.textContent = pokemon.name;
+      cardBody.appendChild(title);
+      card.appendChild(cardBody);
+      
+      // Al click, mostra i dettagli del Pokémon nel modal
+      card.addEventListener('click', () => {
+        showPokemonDetail(pokemon.url);
+      });
+      
+      col.appendChild(card);
+      document.getElementById('pokemonContainer').appendChild(col);
+    }
+
+    // Visualizza, con paginazione, i Pokémon della lista corrente
+    function displayPokemons(list, page) {
+      const container = document.getElementById('pokemonContainer');
+      container.innerHTML = '';
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const subset = list.slice(startIndex, endIndex);
+      subset.forEach(pokemon => {
+        createPokemonCard(pokemon);
+      });
+    }
+
+    // Aggiorna la barra di paginazione in base alla lista corrente
+    function updatePagination() {
+      const paginationContainer = document.getElementById('pagination');
+      paginationContainer.innerHTML = '';
+      const totalPages = Math.ceil(currentDisplayList.length / pageSize);
+      
+      // Bottone "Previous"
+      const prevLi = document.createElement('li');
+      prevLi.className = 'page-item ' + (currentPage === 1 ? 'disabled' : '');
+      const prevLink = document.createElement('a');
+      prevLink.className = 'page-link';
+      prevLink.href = '#';
+      prevLink.textContent = 'Previous';
+      prevLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage > 1) {
+          currentPage--;
+          displayPokemons(currentDisplayList, currentPage);
+          updatePagination();
+        }
+      });
+      prevLi.appendChild(prevLink);
+      paginationContainer.appendChild(prevLi);
+      
+      // Pulsanti per ogni pagina
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = 'page-item ' + (i === currentPage ? 'active' : '');
+        const link = document.createElement('a');
+        link.className = 'page-link';
+        link.href = '#';
+        link.textContent = i;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = i;
+          displayPokemons(currentDisplayList, currentPage);
+          updatePagination();
+        });
+        li.appendChild(link);
+        paginationContainer.appendChild(li);
+      }
+      
+      // Bottone "Next"
+      const nextLi = document.createElement('li');
+      nextLi.className = 'page-item ' + (currentPage === totalPages ? 'disabled' : '');
+      const nextLink = document.createElement('a');
+      nextLink.className = 'page-link';
+      nextLink.href = '#';
+      nextLink.textContent = 'Next';
+      nextLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+          currentPage++;
+          displayPokemons(currentDisplayList, currentPage);
+          updatePagination();
+        }
+      });
+      nextLi.appendChild(nextLink);
+      paginationContainer.appendChild(nextLi);
+    }
+
+    // Carica la lista globale di Pokémon (tutti)
+    async function loadGlobalPokemons() {
+      try {
+        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1118');
+        const data = await response.json();
+        cachedLists.all = data.results;
+        currentDisplayList = cachedLists.all;
+        currentPage = 1;
+        displayPokemons(currentDisplayList, currentPage);
+        updatePagination();
+      } catch (error) {
+        console.error('Errore nel recupero dei Pokémon globali:', error);
+      }
+    }
+
+    // Carica la lista dei Pokémon per un determinato tipo (es. "fire", "water", ecc.)
+    async function loadTypePokemons(type) {
+      try {
+        const response = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+        const data = await response.json();
+        // Estrae la lista dei Pokémon per quel tipo
+        const pokemons = data.pokemon.map(item => item.pokemon);
+        cachedLists[type] = pokemons;
+        currentDisplayList = pokemons;
+        currentPage = 1;
+        displayPokemons(currentDisplayList, currentPage);
+        updatePagination();
+      } catch (error) {
+        console.error(`Errore nel recupero dei Pokémon del tipo ${type}:`, error);
+      }
+    }
+
+    // Funzione per gestire il filtro in base al tipo selezionato
+    function filterPokemons(type, event) {
+      // Aggiorna lo stato active dei pulsanti
+      const buttons = document.querySelectorAll('.btn-group button');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (type === 'all') {
+        currentDisplayList = cachedLists.all;
+        currentPage = 1;
+        displayPokemons(currentDisplayList, currentPage);
+        updatePagination();
+      } else {
+        // Se già presente in cache, utilizza direttamente la lista; altrimenti effettua il fetch
+        if (cachedLists[type]) {
+          currentDisplayList = cachedLists[type];
+          currentPage = 1;
+          displayPokemons(currentDisplayList, currentPage);
+          updatePagination();
+        } else {
+          loadTypePokemons(type);
+        }
+      }
+    }
+    // Rende filterPokemons accessibile globalmente
+    window.filterPokemons = filterPokemons;
+
+    // Mostra i dettagli del Pokémon in un modal
+    async function showPokemonDetail(url) {
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('pokemonModalLabel').textContent = data.name;
+        const imageUrl = data.sprites.other['official-artwork'].front_default || data.sprites.front_default;
+        document.getElementById('pokemonImage').src = imageUrl;
+        document.getElementById('pokemonInfo').innerHTML = `
+          <strong>Altezza:</strong> ${data.height} | <strong>Peso:</strong> ${data.weight}
+        `;
+        
+        const statsList = document.getElementById('pokemonStats');
+        statsList.innerHTML = '';
+        data.stats.forEach(stat => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item text-capitalize';
+          li.textContent = `${stat.stat.name}: ${stat.base_stat}`;
+          statsList.appendChild(li);
+        });
+        
+        const modalEl = document.getElementById('pokemonModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+      } catch (error) {
+        console.error('Errore nel recupero dei dettagli del Pokémon:', error);
+      }
+    }
+
+    // Inizializzazione al caricamento del DOM
+    document.addEventListener('DOMContentLoaded', loadGlobalPokemons);
+  </script>
+
+  <!-- Modal per visualizzare i dettagli del Pokémon -->
+  <div class="modal fade" id="pokemonModal" tabindex="-1" aria-labelledby="pokemonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pokemonModalLabel">Dettagli Pokemon</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Immagine del Pokémon -->
+            <div class="col-md-4">
+              <img id="pokemonImage" src="" alt="Immagine del Pokemon" class="img-fluid">
+            </div>
+            <!-- Informazioni e statistiche -->
+            <div class="col-md-8">
+              <h3 id="pokemonName" class="text-capitalize"></h3>
+              <p id="pokemonInfo"></p>
+              <ul id="pokemonStats" class="list-group list-group-flush"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
