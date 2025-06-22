@@ -1,0 +1,24 @@
+  body {
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+    .pokemon-card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+      margin-bottom: 20px;
+    }
+    .pokemon-card:hover {
+      transform: scale(1.03);
+    }
+    .card-title {
+      text-transform: capitalize;
+    }
+    .btn-group .btn.active {
+      background-color: #0d6efd;
+      color: white;
+    }
+    /* Permette lo scroll orizzontale per il menu se ci sono troppi pulsanti */
+    .filter-container {
+      overflow-x: auto;
+      white-space: nowrap;
+    }
